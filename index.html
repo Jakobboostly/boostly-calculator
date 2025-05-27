@@ -148,10 +148,10 @@
 
             // Calculate what they'll be billed today with proration
             const calculateTodaysBill = (tier) => {
-                if (!tier) return 0;
+                if (!tier) return '0';
                 
                 if (billingCycle === 'annual') {
-                    return tier.annualPrice + 300; // Annual price + launch fee
+                    return (tier.annualPrice + 300).toLocaleString(); // Annual price + launch fee
                 } else {
                     // Prorated monthly amount + launch fee
                     return (tier.monthlyPrice * prorationFactor + 300).toFixed(2);
@@ -333,7 +333,7 @@
                                                     </div>
                                                     <div className="border-t pt-1 flex justify-between font-bold">
                                                         <span>Total:</span>
-                                                        <span className="text-blue-600">${calculateTodaysBill(tier)}</span>
+                                                        <span className="text-blue-600">${calculateTodaysBill(tier).toLocaleString()}</span>
                                                     </div>
                                                 </div>
                                             </div>
