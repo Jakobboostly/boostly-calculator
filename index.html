@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boostly Pricing Calculator</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const Check = ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+        );
+
+        const PricingCalculator = () => {
+            const [initialContacts, setInitialContacts] = React.useState('10000');
+            const [billingCycle, setBillingCycle] = React.useState('annual'); // 'annual' or 'monthly'
+            const [showPlans, setShowPlans] = React.useState(false);
+            
+            // Fixed values
+            const messagesPerSubscriber = 4;
+            
+            // Calculate actual subscribers from initial contacts
+            const remainingAfterFirstText = Number(initialContacts) * 0.70; // 70% remain
+            const actualSubscribers = remainingAfterFirstText * 0.07; // 7% of those opt-in
+            
+            // Get current date for proration calculations
+            const today = new Date();
+            const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            const currentDay = today.getDate();
+            const daysRemaining = daysInMonth - currentDay + 1;
+            const prorationFactor = daysRemaining / daysInMonth;
+
+            const pricingTiers = [
+                {
+                    name: 'Starter',
+                    monthlyPrice: 130,
+                    annualPrice: 130 * 10, // 2 months free
+                    credits: 2000,
+                    topUpRate: 0.065,
+                    optimalSubscribers: 278,
+                    topUpsForUpgrading: 3
+                },
+                {
+                    name: 'Essentials',
+                    monthlyPrice: 190,
+                    annualPrice: 190 * 10,
+                    credits: 3200,
+                    topUpRate: 0.060,
+                    optimalSubscribers: 445,
+                    topUpsForUpgrading: 2
+                },
+                {
+                    name: 'Growth',
+                    monthlyPrice: 260,
+                    annualPrice: 260 * 10,
+                    credits: 4800,
+                    topUpRate: 0.055,
+                    optimalSubscribers: 667,
+                    topUpsForUpgrading: 3
+                },
+                {
+                    name: 'Plus',
+                    monthlyPrice: 350,
+                    annualPrice: 350 * 10,
+                    credits: 7000,
+                    topUpRate: 0.050,
+                    optimalSubscribers: 973,
+                    topUpsForUpgrading: 5
+                },
+                {
+                    name: 'Pro',
+                    monthlyPrice: 475,
+                    annualPrice: 475 * 10,
+                    credits: 10500,
+                    topUpRate: 0.050,
+                    optimalSubscribers: 1460,
+                    topUpsForUpgrading: 8
+                },
+                {
+                    name: 'Elite',
+                    monthlyPrice: 675,
+                    annualPrice: 675 * 10,
+                    credits: 16000,
+                    topUpRate: 0.045,
+                    optimalSubscribers: 2224,
+                    topUpsForUpgrading: 8
+                },
+                {
+                    name: 'Max',
+                    monthlyPrice: 850,
+                    annualPrice: 850 * 10,
+                    credits: 21250,
+                    topUpRate: 0.040,
+                    optimalSubscribers: 2954,
+                    topUpsForUpgrading: 8
+                },
+                {
+                    name: 'Enterprise',
+                    monthlyPrice: 1000,
+                    annualPrice: 1000 * 10,
+                    credits: 26667,
+                    topUpRate: 0.040,
+                    optimalSubscribers: 3707,
+                    topUpsForUpgrading: 0
+                }
+            ];
+
+            // Calculate total messages and credits needed
+            const totalMessages = actualSubscribers * messagesPerSubscriber;
+            const basicMessages = totalMessages * 0.75;
+            const premiumMessages = totalMessages * 0.25;
+            const totalCreditsNeeded = basicMessages + (premiumMessages * 3); // Premium messages cost 3 credits
+            
+            const calculateRecommendedTier = () => {
+                for (let tier of pricingTiers) {
+                    if (totalCreditsNeeded <= tier.credits) {
+                        return tier.name;
+                    }
+                }
+                return 'Enterprise';
+            };
+
+            const recommendedTier = calculateRecommendedTier();
+            const starterTier = pricingTiers[0];
+            const recommendedTierData = pricingTiers.find(t => t.name === recommendedTier);
+            
+            // Only show Starter and Recommended (unless Starter IS recommended)
+            const plansToShow = recommendedTier === 'Starter' 
+                ? [starterTier] 
+                : [starterTier, recommendedTierData];
+            
+            // Calculate pricing based on billing cycle
+            const getDisplayPrice = (tier) => {
+                if (billingCycle === 'annual') {
+                    return `$${(tier.annualPrice / 12).toFixed(0)}/mo`;
+                } else {
+                    return `$${tier.monthlyPrice}/mo`;
+                }
+            };
+
+            // Calculate what they'll be billed today with proration
+            const calculateTodaysBill = (tier) => {
+                if (!tier) return 0;
+                
+                if (billingCycle === 'annual') {
+                    return tier.annualPrice + 300; // Annual price + launch fee
+                } else {
+                    // Prorated monthly amount + launch fee
+                    return (tier.monthlyPrice * prorationFactor + 300).toFixed(2);
+                }
+            };
+
+            // ROI Calculator
+            const calculateROI = (tier) => {
+                const monthlySpend = tier ? 
+                    (billingCycle === 'annual' ? tier.annualPrice / 12 : tier.monthlyPrice) : 0;
+                
+                // Industry average: $4 return per $1 spent on SMS marketing
+                const estimatedMonthlyReturn = monthlySpend * 4;
+                const roi = ((estimatedMonthlyReturn - monthlySpend) / monthlySpend * 100).toFixed(0);
+                
+                return {
+                    monthlySpend,
+                    estimatedReturn: estimatedMonthlyReturn,
+                    roi
+                };
+            };
+
+            React.useEffect(() => {
+                // Fade in plans after a short delay
+                setTimeout(() => setShowPlans(true), 300);
+            }, []);
+
+            return (
+                <div className="max-w-7xl mx-auto p-6 bg-white">
+                    {/* Logo */}
+                    <div className="mb-8">
+                        <div className="flex items-center">
+                            <img 
+                                src="boostlylogo.png" 
+                                alt="Boostly" 
+                                className="h-14 mr-3"
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                }}
+                            />
+                            <h1 className="text-3xl font-bold text-gray-800">Boostly</h1>
+                        </div>
+                    </div>
+
+                    {/* Header */}
+                    <div className="text-center mb-8">
+                        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                            Maximize Your SMS Marketing ROI
+                        </h1>
+                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                            Simply enter your total contact list size and we'll calculate everything for you
+                        </p>
+                    </div>
+
+                    {/* Initial Input */}
+                    <div className="max-w-lg mx-auto mb-8">
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6">
+                            <label className="block text-lg font-medium text-gray-700 mb-3">
+                                Enter Your Total Contact List Size
+                            </label>
+                            <input
+                                type="number"
+                                value={initialContacts}
+                                onChange={(e) => setInitialContacts(e.target.value)}
+                                className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                placeholder="10000"
+                            />
+                            <div className="mt-4 text-sm text-gray-600 space-y-1">
+                                <p>→ Initial text sent to: {remainingAfterFirstText.toLocaleString()} contacts (70%)</p>
+                                <p>→ Expected opt-ins: {actualSubscribers.toLocaleString()} subscribers (7% of reached)</p>
+                                <p>→ Messages per subscriber: {messagesPerSubscriber} per month</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Billing Toggle */}
+                    <div className="flex justify-center mb-8">
+                        <div className="bg-gray-100 p-1 rounded-lg">
+                            <button
+                                onClick={() => setBillingCycle('annual')}
+                                className={`px-6 py-2 rounded-md font-medium transition-all ${
+                                    billingCycle === 'annual' 
+                                        ? 'bg-blue-600 text-white' 
+                                        : 'text-gray-700'
+                                }`}
+                            >
+                                Annual <span className="text-sm">(2 months free)</span>
+                            </button>
+                            <button
+                                onClick={() => setBillingCycle('monthly')}
+                                className={`px-6 py-2 rounded-md font-medium transition-all ${
+                                    billingCycle === 'monthly' 
+                                        ? 'bg-blue-600 text-white' 
+                                        : 'text-gray-700'
+                                }`}
+                            >
+                                Monthly
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Plans and Analysis */}
+                    <div className={`transition-opacity duration-1000 ${showPlans ? 'opacity-100' : 'opacity-0'}`}>
+                        <div className="grid lg:grid-cols-2 gap-8 mb-8">
+                            {/* Left side - Plans */}
+                            <div>
+                                <h2 className="text-2xl font-semibold mb-4">
+                                    {recommendedTier === 'Starter' ? 'Your Recommended Plan' : 'Available Plans'}
+                                </h2>
+                                <div className="space-y-4">
+                                    {plansToShow.map((tier) => (
+                                        <div
+                                            key={tier.name}
+                                            className={`border-2 rounded-lg p-6 transition-all ${
+                                                tier.name === recommendedTier 
+                                                    ? 'border-green-400 bg-green-50 shadow-lg' 
+                                                    : 'border-gray-200'
+                                            }`}
+                                        >
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <h3 className="font-bold text-xl">
+                                                        {tier.name}
+                                                        {tier.name === recommendedTier && (
+                                                            <span className="ml-2 text-sm text-green-600">(Recommended)</span>
+                                                        )}
+                                                    </h3>
+                                                    <p className="text-sm text-gray-600">
+                                                        Most effective at {tier.optimalSubscribers.toLocaleString()} subscribers
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-3xl font-bold">{getDisplayPrice(tier)}</p>
+                                                    {billingCycle === 'annual' && (
+                                                        <p className="text-sm text-green-600 font-medium">
+                                                            Save ${((tier.monthlyPrice * 12) - tier.annualPrice).toLocaleString()}/year
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2 mb-4">
+                                                <div className="flex items-center text-sm">
+                                                    <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                                                    <span>{tier.credits.toLocaleString()} credits per month</span>
+                                                </div>
+                                                {billingCycle === 'annual' && (
+                                                    <div className="flex items-center text-sm">
+                                                        <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                                                        <span className="font-medium text-blue-600">
+                                                            {(tier.credits * 12).toLocaleString()} total annual credits
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <div className="flex items-center text-sm">
+                                                    <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                                                    <span>Top-up rate: {tier.topUpRate.toFixed(3)} credits</span>
+                                                </div>
+                                            </div>
+
+                                            {/* What you'll be billed for this plan */}
+                                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-4">
+                                                <h4 className="font-semibold text-sm mb-2">With This Plan You'll Pay Today:</h4>
+                                                <div className="text-sm space-y-1">
+                                                    <div className="flex justify-between">
+                                                        <span>Launch Fee:</span>
+                                                        <span>$300</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>
+                                                            {billingCycle === 'annual' ? 'Annual' : `Prorated (${daysRemaining} days)`}:
+                                                        </span>
+                                                        <span>
+                                                            ${billingCycle === 'annual' 
+                                                                ? tier.annualPrice.toLocaleString()
+                                                                : (tier.monthlyPrice * prorationFactor).toFixed(2)
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                    <div className="border-t pt-1 flex justify-between font-bold">
+                                                        <span>Total:</span>
+                                                        <span className="text-blue-600">${calculateTodaysBill(tier)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Right side - Analysis */}
+                            <div>
+                                <h2 className="text-2xl font-semibold mb-4">Your Messaging Analysis</h2>
+                                
+                                {/* Credit Breakdown */}
+                                <div className="bg-white border border-gray-200 rounded-lg p-6 mb-4">
+                                    <h3 className="font-semibold text-lg mb-3">Monthly Credit Usage</h3>
+                                    <div className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span>Active Subscribers:</span>
+                                            <span className="font-medium">{actualSubscribers.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Messages per Subscriber:</span>
+                                            <span className="font-medium">{messagesPerSubscriber}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Total Messages:</span>
+                                            <span className="font-medium">{totalMessages.toLocaleString()}</span>
+                                        </div>
+                                        <div className="border-t pt-2 mt-2">
+                                            <div className="flex justify-between">
+                                                <span>Basic Messages (75%):</span>
+                                                <span>{Math.round(basicMessages).toLocaleString()} messages = {Math.round(basicMessages).toLocaleString()} credits</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Premium Messages (25%):</span>
+                                                <span>{Math.round(premiumMessages).toLocaleString()} messages = {Math.round(premiumMessages * 3).toLocaleString()} credits</span>
+                                            </div>
+                                        </div>
+                                        <div className="border-t pt-2 flex justify-between text-lg font-bold">
+                                            <span>Total Credits Needed:</span>
+                                            <span className="text-blue-600">{Math.round(totalCreditsNeeded).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* ROI Projections for each plan */}
+                                {plansToShow.map((tier) => {
+                                    const roiData = calculateROI(tier);
+                                    return (
+                                        <div key={tier.name} className="bg-green-50 border border-green-200 rounded-lg p-6 mb-4">
+                                            <h3 className="font-semibold text-lg mb-3">
+                                                30-Day ROI with {tier.name} Plan
+                                            </h3>
+                                            <div className="space-y-2 text-sm">
+                                                <div className="flex justify-between">
+                                                    <span>Monthly Investment:</span>
+                                                    <span className="font-medium">${roiData.monthlySpend.toFixed(0)}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Estimated Return:</span>
+                                                    <span className="font-medium text-green-600">
+                                                        ${roiData.estimatedReturn.toFixed(0)}
+                                                    </span>
+                                                </div>
+                                                <div className="border-t pt-2 flex justify-between text-lg font-bold">
+                                                    <span>ROI:</span>
+                                                    <span className="text-green-600">{roiData.roi}%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                <p className="text-xs text-gray-600 mt-2">
+                                    *Based on industry average of $4 return per $1 spent on SMS marketing
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Agreement */}
+                    <div className="mt-12 bg-gray-50 rounded-xl p-6 text-center">
+                        <h3 className="font-semibold mb-3">Service Agreement</h3>
+                        <div className="text-sm text-gray-600 space-y-2 max-w-3xl mx-auto">
+                            <p>✓ 60-day ROI guarantee on starter plans - 12-month contract</p>
+                            <p>✓ Billing always starts on the 1st of each month</p>
+                            <p>✓ Credits rollover for 1 month (500 credit limit)</p>
+                            <p>✓ Top-up rate of 1 credit when you exceed your plan</p>
+                            <p>✓ Upgrade recommendations based on usage patterns</p>
+                            <p className="font-medium pt-2">
+                                By continuing, you agree to our terms of service and understand the billing structure outlined above.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<PricingCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
