@@ -284,7 +284,12 @@
                                                     </p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-3xl font-bold">{getDisplayPrice(tier)}</p>
+                                                    <p className="text-3xl font-bold">
+                                                        {billingCycle === 'annual' 
+                                                            ? `${tier.annualPrice.toLocaleString()}/year`
+                                                            : `${tier.monthlyPrice}/mo`
+                                                        }
+                                                    </p>
                                                     {billingCycle === 'annual' && (
                                                         <p className="text-sm text-green-600 font-medium">
                                                             Save ${((tier.monthlyPrice * 12) - tier.annualPrice).toLocaleString()}/year
