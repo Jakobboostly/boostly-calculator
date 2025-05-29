@@ -140,9 +140,9 @@
             // Calculate pricing based on billing cycle
             const getDisplayPrice = (tier) => {
                 if (billingCycle === 'annual') {
-                    return `$${(tier.annualPrice / 12).toFixed(0)}/mo`;
+                    return `${tier.annualPrice.toLocaleString()}/year`;
                 } else {
-                    return `$${tier.monthlyPrice}/mo`;
+                    return `${tier.monthlyPrice}/mo`;
                 }
             };
 
