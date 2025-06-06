@@ -151,10 +151,10 @@
                 if (!tier) return '0';
                 
                 if (billingCycle === 'annual') {
-                    return (tier.annualPrice + 300).toLocaleString(); // Annual price + launch fee
+                    return (tier.annualPrice + 500).toLocaleString(); // Annual price + launch fee
                 } else {
                     // Prorated monthly amount + launch fee
-                    return (tier.monthlyPrice * prorationFactor + 300).toFixed(2);
+                    return (tier.monthlyPrice * prorationFactor + 500).toFixed(2);
                 }
             };
 
@@ -323,7 +323,7 @@
                                                 <div className="text-sm space-y-1">
                                                     <div className="flex justify-between">
                                                         <span>Launch Fee:</span>
-                                                        <span>$300</span>
+                                                        <span>$500</span>
                                                     </div>
                                                     <div className="flex justify-between">
                                                         <span>
