@@ -136,25 +136,16 @@
             const plansToShow = recommendedTier === 'Starter' 
                 ? [starterTier] 
                 : [starterTier, recommendedTierData];
-            
-            // Calculate pricing based on billing cycle
-            const getDisplayPrice = (tier) => {
-                if (billingCycle === 'annual') {
-                    return `${tier.annualPrice.toLocaleString()}/year`;
-                } else {
-                    return `${tier.monthlyPrice}/mo`;
-                }
-            };
 
             // Calculate what they'll be billed today with proration
             const calculateTodaysBill = (tier) => {
-                if (!tier) return '0';
+                if (!tier) return '$0';
                 
                 if (billingCycle === 'annual') {
-                    return (tier.annualPrice + 500).toLocaleString(); // Annual price + launch fee
+                    return '$' + (tier.annualPrice + 500).toLocaleString(); // Annual price + launch fee
                 } else {
                     // Prorated monthly amount + launch fee
-                    return (tier.monthlyPrice * prorationFactor + 500).toFixed(2);
+                    return '$' + (tier.monthlyPrice * prorationFactor + 500).toFixed(2);
                 }
             };
 
@@ -285,9 +276,9 @@
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-3xl font-bold">
-                                                        {billingCycle === 'annual' 
-                                                            ? `${tier.annualPrice.toLocaleString()}/year`
-                                                            : `${tier.monthlyPrice}/mo`
+                                                        ${billingCycle === 'annual' 
+                                                            ? tier.annualPrice.toLocaleString() + '/year'
+                                                            : tier.monthlyPrice + '/mo'
                                                         }
                                                     </p>
                                                     {billingCycle === 'annual' && (
@@ -338,7 +329,7 @@
                                                     </div>
                                                     <div className="border-t pt-1 flex justify-between font-bold">
                                                         <span>Total:</span>
-                                                        <span className="text-blue-600">${calculateTodaysBill(tier).toLocaleString()}</span>
+                                                        <span className="text-blue-600">{calculateTodaysBill(tier)}</span>
                                                     </div>
                                                 </div>
                                             </div>
