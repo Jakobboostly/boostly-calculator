@@ -107,7 +107,9 @@
 
             // Calculate base rate and top-up rate for each tier
             const calculateRates = (tier) => {
-                const baseRate = tier.monthlyPrice / tier.credits;
+                const rawBaseRate = tier.monthlyPrice / tier.credits;
+                // Round up to nearest half cent (0.005)
+                const baseRate = Math.ceil(rawBaseRate / 0.005) * 0.005;
                 const topUpRate = baseRate + 0.005; // Add half a cent per credit for overages
                 return {
                     baseRate: baseRate,
